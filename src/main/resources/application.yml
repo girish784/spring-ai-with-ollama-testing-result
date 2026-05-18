@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: spring-ai-customer-support
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  ai:
+    model:
+      chat: ollama
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      init:
+        pull-model-strategy: when_missing
+      chat:
+        options:
+          model: ${OLLAMA_MODEL:llama3.2:3b}
+          temperature: 0.1
+
+server:
+  port: ${SERVER_PORT:8081}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+customer-support:
+  retrieval-top-k: ${SOP_RETRIEVAL_TOP_K:4}
+  sop-location-pattern: classpath:sops/sop_*.txt
+  logging:
+    include-request-body: ${INCLUDE_REQUEST_BODY:true}
+    max-body-length: ${MAX_LOG_BODY_LENGTH:4000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+logging:
+  file:
+    name: ${LOG_FILE:logs/customer-support-ai.log}
+  level:
+    root: INFO
+    com.example.customersupportai: DEBUG
+    org.springframework.ai: INFO
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"

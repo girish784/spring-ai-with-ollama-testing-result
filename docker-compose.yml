@@ -1,0 +1,48 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: customer-support-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 15s
+      retries: 12
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: customer-support-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull \"$${OLLAMA_MODEL}\""]
+    restart: "no"
+
+  customer-support-ai:
+    build:
+      context: .
+    container_name: customer-support-ai
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: 8081
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      SPRING_MVC_PATHMATCH_MATCHING_STRATEGY: ant_path_matcher
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  ollama-data:
